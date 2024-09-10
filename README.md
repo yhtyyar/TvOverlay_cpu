@@ -1,4 +1,18 @@
-  
+<div align="center">
+
+⚠️ **Important Notice** ⚠️
+
+---
+
+The TvOverlay Remote app is currently suspended on the Google Play Store for unknown reasons. I am in contact with Google to resolve this issue, but it may take some time. In the meantime, a beta version of the app is available [here](https://github.com/gugutab/TvOverlay/tree/main/apk). Please note that the premium purchase feature will not work.
+
+Thank you for your understanding and patience.
+
+---
+
+</div>
+
+
 <p align="center">
 <picture><img src="https://github.com/gugutab/TvOverlay/blob/main/images/readme_main.png?raw=true" alt="TvOverlay" width="600"></picture>
 <br>
