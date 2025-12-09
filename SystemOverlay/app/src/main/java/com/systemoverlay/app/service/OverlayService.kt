@@ -256,9 +256,16 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         
         logger.d("Creating overlay view")
         
+        val params = createWindowLayoutParams(_settings.value.position)
+        
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@OverlayService)
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
+            
+            // Add drag & drop for mobile devices
+            if (!deviceUtils.isTvDevice()) {
+                setOnTouchListener(DragTouchListener(params, windowManager, this@OverlayService.logger))
+            }
             
             setContent {
                 val currentSettings by settings.collectAsState()
@@ -274,12 +281,10 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             }
         }
         
-        val params = createWindowLayoutParams(_settings.value.position)
-        
         try {
             windowManager.addView(composeView, params)
             overlayView = composeView
-            logger.i("Overlay view created successfully")
+            logger.i("Overlay view created successfully (draggable: ${!deviceUtils.isTvDevice()})")
         } catch (e: SecurityException) {
             logger.e("Security exception creating overlay - no permission", e)
             stopSelf()
@@ -446,6 +451,58 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             else -> {
                 Constants.TV_FAST_UPDATE_INTERVAL_MS
             }
+        }
+    }
+    
+    /**
+     * Touch listener for dragging overlay on mobile devices
+     * Clean implementation for smooth drag & drop
+     */
+    private class DragTouchListener(
+        private val params: WindowManager.LayoutParams,
+        private val windowManager: WindowManager,
+        private val logger: Logger.TaggedLogger
+    ) : android.view.View.OnTouchListener {
+        
+        private var initialX = 0
+        private var initialY = 0
+        private var initialTouchX = 0f
+        private var initialTouchY = 0f
+        
+        override fun onTouch(view: android.view.View, event: android.view.MotionEvent): Boolean {
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    // Save initial position
+                    initialX = params.x
+                    initialY = params.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    return true
+                }
+                
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    // Calculate new position
+                    val deltaX = (event.rawX - initialTouchX).toInt()
+                    val deltaY = (event.rawY - initialTouchY).toInt()
+                    
+                    params.x = initialX + deltaX
+                    params.y = initialY + deltaY
+                    
+                    // Update overlay position
+                    try {
+                        windowManager.updateViewLayout(view, params)
+                    } catch (e: Exception) {
+                        logger.e("Error updating view during drag", e)
+                    }
+                    return true
+                }
+                
+                android.view.MotionEvent.ACTION_UP -> {
+                    logger.d("Overlay dragged to position (${params.x}, ${params.y})")
+                    return true
+                }
+            }
+            return false
         }
     }
 }

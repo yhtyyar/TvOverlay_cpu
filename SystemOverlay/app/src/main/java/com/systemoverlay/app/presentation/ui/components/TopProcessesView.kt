@@ -3,6 +3,7 @@ package com.systemoverlay.app.presentation.ui.components
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,37 +37,69 @@ fun TopProcessesOverlay(
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
-    if (topProcesses.processes.isEmpty()) return
+    if (topProcesses.processes.isEmpty() && topProcesses.ownAppProcess == null) return
     
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
             .animateContentSize(),
         horizontalAlignment = Alignment.Start
     ) {
-        // Header
+        // Header - compact
         Text(
-            text = "TOP RAM USAGE",
+            text = "TOP 3 APPS",
             color = textColor.copy(alpha = 0.7f),
-            fontSize = 10.sp,
+            fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace
         )
         
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         
-        // Process list
-        topProcesses.processes.take(5).forEachIndexed { index, process ->
+        // Process list - show only top 3 (excluding our app)
+        topProcesses.processes.take(3).forEachIndexed { index, process ->
             ProcessItemCompact(
                 process = process,
                 index = index + 1,
                 textColor = textColor
             )
-            if (index < topProcesses.processes.size - 1 && index < 4) {
-                Spacer(modifier = Modifier.height(3.dp))
+            if (index < topProcesses.processes.size - 1 && index < 2) {
+                Spacer(modifier = Modifier.height(2.dp))
             }
+        }
+        
+        // Our app separately for benchmark
+        topProcesses.ownAppProcess?.let { ownApp ->
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Separator line
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(textColor.copy(alpha = 0.2f))
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Our app with label
+            Text(
+                text = "BENCHMARK",
+                color = textColor.copy(alpha = 0.5f),
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            
+            ProcessItemCompact(
+                process = ownApp,
+                index = null, // No index for our app
+                textColor = textColor.copy(alpha = 0.8f),
+                isBenchmark = true
+            )
         }
     }
 }
@@ -77,80 +110,78 @@ fun TopProcessesOverlay(
 @Composable
 private fun ProcessItemCompact(
     process: ProcessInfo,
-    index: Int,
+    index: Int?,
     textColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isBenchmark: Boolean = false
 ) {
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
+        // App name with index
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Index number
-            Text(
-                text = "$index.",
-                color = textColor.copy(alpha = 0.5f),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Normal,
-                fontFamily = FontFamily.Monospace
-            )
+            if (index != null) {
+                Text(
+                    text = "$index.",
+                    color = textColor.copy(alpha = 0.5f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Normal,
+                    fontFamily = FontFamily.Monospace
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
             
-            Spacer(modifier = Modifier.width(4.dp))
-            
-            // App name (truncated if too long)
             Text(
                 text = process.appName,
-                color = textColor,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
+                color = if (isBenchmark) textColor.copy(alpha = 0.9f) else textColor,
+                fontSize = 9.sp,
+                fontWeight = if (isBenchmark) FontWeight.Bold else FontWeight.Medium,
                 fontFamily = FontFamily.Monospace,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                overflow = TextOverflow.Ellipsis
             )
         }
         
-        // CPU and RAM on second line
+        // CPU and RAM on second line - more compact
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 14.dp),
+                .padding(start = 12.dp, top = 1.dp),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // CPU usage
             Text(
                 text = "CPU:",
-                color = textColor.copy(alpha = 0.6f),
-                fontSize = 9.sp,
+                color = textColor.copy(alpha = 0.5f),
+                fontSize = 8.sp,
                 fontFamily = FontFamily.Monospace
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = "${process.cpuUsagePercent.toInt()}%",
                 color = getColorForCpu(process.cpuUsagePercent),
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace
             )
             
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             
-            // RAM usage
             Text(
                 text = "RAM:",
-                color = textColor.copy(alpha = 0.6f),
-                fontSize = 9.sp,
+                color = textColor.copy(alpha = 0.5f),
+                fontSize = 8.sp,
                 fontFamily = FontFamily.Monospace
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = "${process.memoryUsageMB}MB",
                 color = getColorForMemory(process.memoryUsageMB),
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace
             )

@@ -24,9 +24,9 @@ object Constants {
     // Process monitoring - real-time
     const val PROCESS_UPDATE_INTERVAL_MS = 1000L   // Process CPU/RAM every second
     
-    // Overlay - TV optimized
-    const val DEFAULT_OPACITY = 0.85f             // Slightly more visible for TV
-    const val MIN_OPACITY = 0.3f
+    // Overlay - TV optimized with transparency
+    const val DEFAULT_OPACITY = 0.65f             // More transparent by default
+    const val MIN_OPACITY = 0.2f
     const val MAX_OPACITY = 1.0f
     const val OVERLAY_MARGIN_DP = 24              // Larger margin for TV safe area
     const val TV_OVERLAY_MARGIN_DP = 32           // TV safe zone margin

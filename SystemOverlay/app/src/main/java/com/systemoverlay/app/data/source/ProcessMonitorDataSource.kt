@@ -36,8 +36,8 @@ class ProcessMonitorDataSource @Inject constructor(
     private val lastProcessCpuTimes = mutableMapOf<Int, Pair<Long, Long>>() // pid -> (totalTime, timestamp)
     
     private companion object {
-        const val CACHE_DURATION_MS = 1000L // 1 second cache for real-time updates
-        const val TOP_PROCESS_COUNT = 5
+        const val CACHE_DURATION_MS = 800L // 0.8 second cache for real-time updates
+        const val TOP_PROCESS_COUNT = 3 // Show only top 3 processes
     }
     
     /**
@@ -77,6 +77,8 @@ class ProcessMonitorDataSource @Inject constructor(
                 }
                 
                 // Build process info list with CPU and RAM
+                var ownApp: ProcessInfo? = null
+                
                 runningProcesses.forEachIndexed { index, processInfo ->
                     try {
                         val memInfo = memInfoArray.getOrNull(index)
@@ -91,17 +93,23 @@ class ProcessMonitorDataSource @Inject constructor(
                             // Get app name from package name
                             val appName = getAppName(processInfo.processName)
                             
+                            val process = ProcessInfo(
+                                packageName = processInfo.processName,
+                                appName = appName,
+                                memoryUsageMB = memoryMB,
+                                cpuUsagePercent = cpuUsage,
+                                pid = processInfo.pid
+                            )
+                            
+                            // Save our own app separately for benchmark
+                            if (processInfo.processName.contains("systemoverlay", ignoreCase = true)) {
+                                ownApp = process
+                                return@forEachIndexed
+                            }
+                            
                             // Only include processes with significant memory usage (> 10MB)
                             if (memoryMB > 10) {
-                                processInfoList.add(
-                                    ProcessInfo(
-                                        packageName = processInfo.processName,
-                                        appName = appName,
-                                        memoryUsageMB = memoryMB,
-                                        cpuUsagePercent = cpuUsage,
-                                        pid = processInfo.pid
-                                    )
-                                )
+                                processInfoList.add(process)
                             }
                         }
                     } catch (e: Exception) {
@@ -114,10 +122,11 @@ class ProcessMonitorDataSource @Inject constructor(
                     .sortedByDescending { it.memoryUsageMB }
                     .take(topN)
                 
-                logger.i("Top $topN processes: ${topProcesses.size} found (total: ${processInfoList.size})")
+                logger.i("Top $topN processes: ${topProcesses.size} found (total: ${processInfoList.size}, own app: ${ownApp != null})")
                 
                 val result = TopProcesses(
                     processes = topProcesses,
+                    ownAppProcess = ownApp, // Include our app for benchmark
                     totalProcesses = processInfoList.size
                 )
                 

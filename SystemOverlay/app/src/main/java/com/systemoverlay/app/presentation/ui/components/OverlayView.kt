@@ -63,50 +63,58 @@ fun OverlayWidget(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(Color(settings.backgroundColor).copy(alpha = settings.opacity))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.End
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        if (settings.showClock) {
-            ClockDisplay(textColor = Color(settings.textColor))
-            if (settings.showCpu || settings.showGpu || settings.showRam) {
-                Spacer(modifier = Modifier.height(6.dp))
+        // Metrics section - aligned to END (right)
+        Column(
+            horizontalAlignment = Alignment.End
+        ) {
+            if (settings.showClock) {
+                ClockDisplay(textColor = Color(settings.textColor))
+                if (settings.showCpu || settings.showGpu || settings.showRam) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+            
+            if (settings.showCpu) {
+                AnimatedMetricRow(
+                    icon = Icons.Default.Speed,
+                    label = "CPU",
+                    value = metrics.cpu.overallUsage,
+                    color = Color(settings.cpuColor)
+                )
+            }
+            
+            if (settings.showGpu && isGpuAvailable) {
+                AnimatedMetricRow(
+                    icon = Icons.Default.Memory,
+                    label = "GPU",
+                    value = metrics.gpu.usage,
+                    color = Color(settings.gpuColor)
+                )
+            }
+            
+            if (settings.showRam) {
+                RamMetricRow(
+                    metrics = metrics.ram,
+                    baseColor = Color(settings.ramColor)
+                )
             }
         }
         
-        if (settings.showCpu) {
-            AnimatedMetricRow(
-                icon = Icons.Default.Speed,
-                label = "CPU",
-                value = metrics.cpu.overallUsage,
-                color = Color(settings.cpuColor)
-            )
-        }
-        
-        if (settings.showGpu && isGpuAvailable) {
-            AnimatedMetricRow(
-                icon = Icons.Default.Memory,
-                label = "GPU",
-                value = metrics.gpu.usage,
-                color = Color(settings.gpuColor)
-            )
-        }
-        
-        if (settings.showRam) {
-            RamMetricRow(
-                metrics = metrics.ram,
-                baseColor = Color(settings.ramColor)
-            )
-        }
-        
-        // Top Processes section (below metrics)
+        // Top Processes section - aligned to START (left)
         if (metrics.topProcesses.processes.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             
-            TopProcessesOverlay(
-                topProcesses = metrics.topProcesses,
-                backgroundColor = Color.Black.copy(alpha = 0.3f),
-                textColor = Color.White
-            )
+            Column(
+                horizontalAlignment = Alignment.Start
+            ) {
+                TopProcessesOverlay(
+                    topProcesses = metrics.topProcesses,
+                    backgroundColor = Color.Black.copy(alpha = 0.3f),
+                    textColor = Color.White
+                )
+            }
         }
     }
 }

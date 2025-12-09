@@ -27,9 +27,10 @@ data class ProcessInfo(
  */
 data class TopProcesses(
     val processes: List<ProcessInfo> = emptyList(),
+    val ownAppProcess: ProcessInfo? = null, // Our app for benchmark
     val totalProcesses: Int = 0
 ) {
     companion object {
-        fun empty() = TopProcesses(emptyList(), 0)
+        fun empty() = TopProcesses(emptyList(), null, 0)
     }
 }
