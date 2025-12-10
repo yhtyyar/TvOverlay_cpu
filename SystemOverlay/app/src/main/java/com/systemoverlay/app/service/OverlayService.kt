@@ -110,6 +110,9 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         super.onCreate()
         logger.i("Service onCreate")
         
+        // Setup exception handler for Compose crashes (e.g., ACTION_HOVER_EXIT on TV)
+        setupExceptionHandler()
+        
         savedStateRegistryController.performAttach()
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
@@ -118,6 +121,26 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         createNotificationChannel()
         
         observeSettings()
+    }
+    
+    private fun setupExceptionHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            // Log all exceptions
+            logger.e("Uncaught exception in thread ${thread.name}", throwable)
+            
+            // Handle specific Compose hover event crash on Android TV
+            if (throwable is IllegalStateException && 
+                throwable.message?.contains("ACTION_HOVER_EXIT") == true) {
+                logger.w("Caught ACTION_HOVER_EXIT crash (TV hover event issue), recovering gracefully")
+                // Don't crash - this is a known Compose TV issue
+                // Service will continue running
+                return@setDefaultUncaughtExceptionHandler
+            }
+            
+            // For other exceptions, use default handler
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
     }
     
     private fun observeSettings() {
@@ -314,14 +337,24 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         val marginDp = deviceUtils.getOverlayMargin()
         val margin = (marginDp * resources.displayMetrics.density).toInt()
         
+        // Fix for ACTION_HOVER_EXIT crash on Android TV
+        val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
+                // Disable touch for TV to prevent hover events crash
+                if (deviceUtils.isTvDevice()) {
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                } else {
+                    0
+                }
+        
         return WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            flags,
             PixelFormat.TRANSLUCENT
         ).apply {
             this.gravity = gravity

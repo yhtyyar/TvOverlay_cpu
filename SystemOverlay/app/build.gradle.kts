@@ -14,16 +14,32 @@ android {
         minSdk = 21
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.5.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         // TV and performance optimizations
         vectorDrawables.useSupportLibrary = true
         
+        // Native C++ configuration
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17 -O3 -ffast-math -Wall"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+        
         ndk {
             // Include only necessary architectures for size optimization
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+    
+    // CMake configuration for native C++ code
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            // Use default CMake version from SDK
         }
     }
 
