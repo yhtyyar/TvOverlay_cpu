@@ -70,7 +70,7 @@ fun TopProcessesOverlay(
             }
         }
         
-        // Our app separately for benchmark
+        // Our app separately for benchmark - compact format
         topProcesses.ownAppProcess?.let { ownApp ->
             Spacer(modifier = Modifier.height(4.dp))
             
@@ -82,24 +82,56 @@ fun TopProcessesOverlay(
                     .background(textColor.copy(alpha = 0.2f))
             )
             
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
             
-            // Our app with label
-            Text(
-                text = "BENCHMARK",
-                color = textColor.copy(alpha = 0.5f),
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            
-            ProcessItemCompact(
-                process = ownApp,
-                index = null, // No index for our app
-                textColor = textColor.copy(alpha = 0.8f),
-                isBenchmark = true
-            )
+            // Compact single-line format: "self: CPU: X%  RAM: XMB"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "self:",
+                    color = textColor.copy(alpha = 0.6f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+                
+                Spacer(modifier = Modifier.width(4.dp))
+                
+                Text(
+                    text = "CPU:",
+                    color = textColor.copy(alpha = 0.5f),
+                    fontSize = 8.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = "${ownApp.cpuUsagePercent.toInt()}%",
+                    color = getColorForCpu(ownApp.cpuUsagePercent),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Text(
+                    text = "RAM:",
+                    color = textColor.copy(alpha = 0.5f),
+                    fontSize = 8.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = "${ownApp.memoryUsageMB}MB",
+                    color = getColorForMemory(ownApp.memoryUsageMB),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
         }
     }
 }
